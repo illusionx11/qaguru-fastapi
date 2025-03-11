@@ -7,6 +7,9 @@ from http import HTTPStatus
 class TestPagination:
     
     def test_users_pagination_total(self, app_url: str):
+        """
+        Тест на проверку общего количества записей (пользователей) в пагинации
+        """
         response = requests.get(f"{app_url}/api/users/")
         assert response.status_code == HTTPStatus.OK
     
@@ -20,6 +23,9 @@ class TestPagination:
         ]
     )
     def test_users_pagination_expected_users(self, app_url: str, pagination_data: list[dict]):
+        """
+        Тест на проверку определенного количества записей (пользователей) в пагинации при фиксированном значении size
+        """
         page = pagination_data["page"]
         response = requests.get(f"{app_url}/api/users/", params={"page": page, "size": 10})
         assert response.status_code == HTTPStatus.OK
@@ -35,6 +41,9 @@ class TestPagination:
         ]
     )
     def test_users_pagination_page_info_correct(self, app_url: str, data: dict):
+        """
+        Тест на проверку корректных записей (пользователей) на разных страницах
+        """
         page = data["page"]
         response = requests.get(f"{app_url}/api/users/", params={"page": page, "size": 10})
         assert response.status_code == HTTPStatus.OK
@@ -52,6 +61,9 @@ class TestPagination:
         ]
     )
     def test_users_pagination_expected_pages(self, app_url: str, pagination_data: list[dict]):
+        """
+        Тест на проверку количества страниц в пагинации при фиксированном значении size
+        """
         size = pagination_data["size"]
         response = requests.get(f"{app_url}/api/users/", params={"page": 1, "size": size})
         assert response.status_code == HTTPStatus.OK
@@ -60,6 +72,9 @@ class TestPagination:
         assert pages == pagination_data["expected_pages"]
         
     def test_users_pagination_wrong_page(self, app_url: str):
+        """
+        Тест на проверку количества записей (пользователей) на несуществующей странице
+        """
         response = requests.get(f"{app_url}/api/users/", params={"page": 100, "size": 10})
         assert response.status_code == HTTPStatus.OK
         users = response.json()["items"]
