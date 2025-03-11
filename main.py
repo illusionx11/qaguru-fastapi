@@ -5,6 +5,10 @@ from http import HTTPStatus
 from models.User import User
 from models.AppStatus import AppStatus
 import json
+import dotenv
+import os
+
+dotenv.load_dotenv()
 
 app = FastAPI()
 add_pagination(app)
@@ -36,4 +40,8 @@ if __name__ == "__main__":
         User.model_validate(user)
     
     print("Users loaded")
-    uvicorn.run(app, host="localhost", port=8002)
+    
+    APP_URL = os.getenv("APP_URL").split("http://")[1]
+    APP_HOST = APP_URL.split(":")[0]
+    APP_PORT = int(APP_URL.split(":")[1])
+    uvicorn.run(app, host=APP_HOST, port=APP_PORT)
