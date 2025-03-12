@@ -1,82 +1,79 @@
 import pytest
 import requests
 from http import HTTPStatus
+from models.User import User
 
 @pytest.mark.pagination
-@pytest.mark.usefixtures("app_url")
+@pytest.mark.usefixtures("app_url", "users")
 class TestPagination:
     
-    def test_users_pagination_total(self, app_url: str):
+    def test_users_pagination_total(self, app_url: str, users: list[User]):
         """
         Тест на проверку общего количества записей (пользователей) в пагинации
         """
+        
         response = requests.get(f"{app_url}/api/users/")
         assert response.status_code == HTTPStatus.OK
     
         total = response.json()["total"]
-        assert total == 12
+        assert total == len(users)
 
-    @pytest.mark.parametrize(
-        "pagination_data", [
-            {"page": 1, "expected_users": 10},
-            {"page": 2, "expected_users": 2}
-        ]
-    )
-    def test_users_pagination_expected_users(self, app_url: str, pagination_data: list[dict]):
+    @pytest.mark.parametrize("page", [1, 2])
+    def test_users_pagination_expected_users(self, app_url: str, page: int, users: list[User]):
         """
-        Тест на проверку определенного количества записей (пользователей) в пагинации при фиксированном значении size
+        Тест на проверку ожидаемого количества объектов в ответе при фиксированном значении size
         """
-        page = pagination_data["page"]
-        response = requests.get(f"{app_url}/api/users/", params={"page": page, "size": 10})
+        
+        size = 10
+        response = requests.get(f"{app_url}/api/users/", params={"page": page, "size": size})
         assert response.status_code == HTTPStatus.OK
         
-        users = response.json()["items"]
-        assert len(users) == pagination_data["expected_users"]
+        users_on_page = response.json()["items"]
+        # Вычисление ожидаемого кол-ва пользователей для определенной страницы. 
+        # max(0, ...) т.к. результат min может быть отрицательный (напр. когда страница 100, в ответе записей не будет, и min вернет отрицательное значение)
+        expected_users_on_page = max(0, min(size, len(users) - (page - 1) * size))
 
-    @pytest.mark.parametrize(
-        "data", 
-        [
-            {"page": 1, "first_user_id": 1, "last_user_id": 10},
-            {"page": 2, "first_user_id": 11, "last_user_id": 12}
-        ]
-    )
-    def test_users_pagination_page_info_correct(self, app_url: str, data: dict):
-        """
-        Тест на проверку корректных записей (пользователей) на разных страницах
-        """
-        page = data["page"]
-        response = requests.get(f"{app_url}/api/users/", params={"page": page, "size": 10})
-        assert response.status_code == HTTPStatus.OK
-        
-        users = response.json()["items"]
-        assert users[0]["id"] == data["first_user_id"]
-        assert users[-1]["id"] == data["last_user_id"]
+        assert len(users_on_page) == expected_users_on_page
 
-    @pytest.mark.parametrize(
-        "pagination_data", 
-        [
-            {"size": 5, "expected_pages": 3},
-            {"size": 3, "expected_pages": 4},
-            {"size": 1, "expected_pages": 12}
-        ]
-    )
-    def test_users_pagination_expected_pages(self, app_url: str, pagination_data: list[dict]):
+    @pytest.mark.parametrize("size", [5, 3, 1])
+    def test_users_pagination_expected_pages(self, app_url: str, size: int, users: list[User]):
         """
-        Тест на проверку количества страниц в пагинации при фиксированном значении size
+        Тест на проверку того, что возвращается правильное количество страниц при разных значениях size
         """
-        size = pagination_data["size"]
+
         response = requests.get(f"{app_url}/api/users/", params={"page": 1, "size": size})
         assert response.status_code == HTTPStatus.OK
 
         pages = response.json()["pages"]
-        assert pages == pagination_data["expected_pages"]
+        # Формула для расчета кол-ва страниц при заданном size
+        # Если есть остаток, то добавление size - 1 гарантирует, что этот остаток будет учтен как дополнительная страница
+        expected_pages = (len(users) + size - 1) // size
+        assert pages == expected_pages
         
-    def test_users_pagination_wrong_page(self, app_url: str):
+    def test_users_pagination_wrong_page(self, app_url: str, users: list[User]):
         """
         Тест на проверку количества записей (пользователей) на несуществующей странице
         """
-        response = requests.get(f"{app_url}/api/users/", params={"page": 100, "size": 10})
+        
+        size = 10
+        max_page = (len(users) + size - 1) // size
+        
+        response = requests.get(f"{app_url}/api/users/", params={"page": max_page + 1, "size": size})
         assert response.status_code == HTTPStatus.OK
         users = response.json()["items"]
         assert len(users) == 0
 
+    def test_pagination_different_results_per_page(self, app_url: str):
+        """
+        Тест на проверку того, что возвращаются разные данные при разных значениях page
+        """
+        
+        response_first = requests.get(f"{app_url}/api/users/", params={"page": 1, "size": 5})
+        response_second = requests.get(f"{app_url}/api/users/", params={"page": 2, "size": 5})
+        
+        res_first = response_first.json()
+        res_second = response_second.json()
+        
+        assert res_first["page"] != res_second["page"]
+        assert res_first["items"] != res_second["items"]
+        
