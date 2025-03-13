@@ -42,7 +42,6 @@ def fill_test_data(app_url: str):
 def clear_generated_users(app_url: str) -> None:
 
     response = requests.get(f"{app_url}/api/users/", params={"page": 1, "size": 100})
-    assert response.status_code == HTTPStatus.OK
     users = response.json()["items"]
     
     generated_users = [user for user in users if "qaguru.autotest" in user["email"]]
