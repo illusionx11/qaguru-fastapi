@@ -1,8 +1,8 @@
 import pytest
 import requests
 from http import HTTPStatus
-from models.User import User
-from models.AppStatus import AppStatus
+from app.models.User import User
+from app.models.AppStatus import AppStatus
 import random
 
 @pytest.mark.smoke
@@ -14,7 +14,7 @@ class TestSmoke:
         assert response.status_code == HTTPStatus.OK
         result = response.json()
         AppStatus.model_validate(result)
-        assert result["users"] == True
+        assert result["database"] == True
 
     def test_smoke_users(self, app_url: str):
         response = requests.get(f"{app_url}/api/users/")
