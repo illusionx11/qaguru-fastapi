@@ -56,12 +56,12 @@ class TestUsers:
         """ 
         Тест на delete: удаление. Предусловия: наличие созданного пользователя
         """
-        if len(users) > 0:
-            user: dict = random.choice(users)
-            response = requests.delete(f"{app_url}/api/users/{user['id']}")
-            assert response.status_code == HTTPStatus.OK
-            data: dict = response.json()
-            assert data["message"] == "User deleted"
+
+        user: dict = random.choice(users)
+        response = requests.delete(f"{app_url}/api/users/{user['id']}")
+        assert response.status_code == HTTPStatus.OK
+        data: dict = response.json()
+        assert data["message"] == "User deleted"
     
     @pytest.mark.parametrize("user_data", [
         {
@@ -101,15 +101,15 @@ class TestUsers:
         Тест на patch: изменение. Предусловия: наличие созданного пользователя
         Не использую faker т.к. значение в каком-нибудь из полей может повториться, тогда последний assert не пройдет
         """
-        if len(users) > 0:
-            user: dict = random.choice(users)
-            response = requests.patch(f"{app_url}/api/users/{user['id']}", json=user_data)
-            assert response.status_code == HTTPStatus.OK
-            updated_user: dict = response.json()
-            User.model_validate(updated_user)
-            assert user['id'] == updated_user['id']
-            for key in user_data.keys():
-                assert user[key] != updated_user[key]
+
+        user: dict = random.choice(users)
+        response = requests.patch(f"{app_url}/api/users/{user['id']}", json=user_data)
+        assert response.status_code == HTTPStatus.OK
+        updated_user: dict = response.json()
+        User.model_validate(updated_user)
+        assert user['id'] == updated_user['id']
+        for key in user_data.keys():
+            assert user[key] != updated_user[key]
 
     def test_get_user_after_post(self, app_url: str):
         """ 
@@ -135,27 +135,26 @@ class TestUsers:
         Тест на Get после изменения
         """
 
-        if len(users) > 0:
-            user_patch_data = {
-                "email": "unique.mail.5@qaguru.autotest",
-                "first_name": "UniqueFirstName5",
-                "last_name": "UniqueLastName5",
-                "avatar": "https://reqres.in/img/faces/unique-avatar-5.jpg"
-            }
-            
-            user: dict = random.choice(users)
-            response = requests.patch(f"{app_url}/api/users/{user['id']}", json=user_patch_data)
-            assert response.status_code == HTTPStatus.OK   
-            updated_user: dict = response.json()
-            user_id = updated_user.pop("id", None)
-            assert updated_user == user_patch_data
-            
-            response = requests.get(f"{app_url}/api/users/{user_id}")
-            assert response.status_code == HTTPStatus.OK
-            get_user: dict = response.json()
-            get_user_id = get_user.pop("id", None)
-            assert user_id == get_user_id
-            assert get_user == updated_user
+        user_patch_data = {
+            "email": "unique.mail.5@qaguru.autotest",
+            "first_name": "UniqueFirstName5",
+            "last_name": "UniqueLastName5",
+            "avatar": "https://reqres.in/img/faces/unique-avatar-5.jpg"
+        }
+        
+        user: dict = random.choice(users)
+        response = requests.patch(f"{app_url}/api/users/{user['id']}", json=user_patch_data)
+        assert response.status_code == HTTPStatus.OK   
+        updated_user: dict = response.json()
+        user_id = updated_user.pop("id", None)
+        assert updated_user == user_patch_data
+        
+        response = requests.get(f"{app_url}/api/users/{user_id}")
+        assert response.status_code == HTTPStatus.OK
+        get_user: dict = response.json()
+        get_user_id = get_user.pop("id", None)
+        assert user_id == get_user_id
+        assert get_user == updated_user
     
     @pytest.mark.parametrize("request_data", [
         {
@@ -192,7 +191,7 @@ class TestUsers:
         Тест на 404 ошибку при удалении и обновлении
         """
         user_ids = [user["id"] for user in users]
-        non_existent_user_id = max(user_ids) + 100 if len(users) > 0 else 100
+        non_existent_user_id = max(user_ids) + 100
         response = requests.request(
             method=request_data["method"], 
             url=f"{app_url}/api/users/{non_existent_user_id}", 
