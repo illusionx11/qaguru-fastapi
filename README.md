@@ -71,6 +71,66 @@
 }
 ```
 
+### POST /api/users/
+
+Создает нового пользователя.
+
+Тело запроса:
+
+```json
+{
+  "email": "user@example.com",
+  "first_name": "John",
+  "last_name": "Doe",
+  "avatar": "https://example.com/avatar.jpg"
+}
+```
+
+Ответ: 201 Created с созданным пользователем
+
+### PATCH /api/users/{user_id}
+
+Обновляет существующего пользователя.
+
+Тело запроса:
+
+```json
+{
+  "email": "updated@example.com",
+  "first_name": "John",
+  "last_name": "Doe",
+  "avatar": "https://example.com/new-avatar.jpg"
+}
+```
+
+Ответ: 200 OK с обновленным пользователем
+
+### DELETE /api/users/{user_id}
+
+Удаляет пользователя по ID.
+
+Ответ: 200 OK с сообщением об успешном удалении
+
+```json
+{
+  "message": "User deleted"
+}
+```
+
+### DELETE /api/users/bulk_delete/
+
+Удаляет несколько пользователей по списку ID.
+
+Тело запроса:
+
+```json
+{
+  "ids": [1, 2, 3]
+}
+```
+
+Ответ: 204 No Content
+
 ## Установка
 
 1. Клонируйте репозиторий
