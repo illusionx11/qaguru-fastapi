@@ -1,7 +1,12 @@
+Faker==37.0.0
 fastapi==0.115.11
 fastapi_pagination==0.12.34
 pydantic==2.10.6
 pytest==8.3.5
 python-dotenv==1.0.1
 Requests==2.32.3
+psycopg2-binary
+SQLAlchemy==2.0.39
+sqlmodel==0.0.24
+pipreqs
 uvicorn==0.34.0
