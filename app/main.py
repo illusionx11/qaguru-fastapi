@@ -3,18 +3,25 @@ dotenv.find_dotenv()
 
 import os
 import uvicorn
+import logging
 from fastapi import FastAPI
 from fastapi_pagination import add_pagination
-from routes import status, users
-from database.engine import create_db_and_tables
+from app.routes import status, users
+from app.database.engine import create_db_and_tables
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    logging.warning("On startup")
+    create_db_and_tables()
+    yield
+    logging.warning("On shutdown")
+
+app = FastAPI(lifespan=lifespan)
 app.include_router(status.router)
 app.include_router(users.router)
 add_pagination(app)
 
 if __name__ == "__main__":
-    create_db_and_tables()
     APP_URL = os.getenv("APP_URL").split("http://")[1]
     APP_HOST = APP_URL.split(":")[0]
     APP_PORT = int(APP_URL.split(":")[1])
