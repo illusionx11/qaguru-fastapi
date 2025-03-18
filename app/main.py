@@ -3,6 +3,7 @@ dotenv.find_dotenv()
 
 import os
 import uvicorn
+import logging
 from fastapi import FastAPI
 from fastapi_pagination import add_pagination
 from app.routes import status, users
@@ -10,11 +11,11 @@ from app.database.engine import create_db_and_tables
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("On startup")
+    logging.warning("On startup")
     create_db_and_tables()
     yield
 
-    print("On shutdown")
+    logging.warning("On shutdown")
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(status.router)
