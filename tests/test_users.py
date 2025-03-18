@@ -3,11 +3,10 @@ import requests
 import random
 from http import HTTPStatus
 from app.models.User import User
-from tests.utils.generate_user_data import generate_user_data
 
 
 @pytest.mark.users_tests
-@pytest.mark.usefixtures("app_url", "users", "fill_test_data")
+@pytest.mark.usefixtures("app_url", "users", "fill_test_data", "user_data")
 class TestUsers:                
     
     def test_get_users(self, app_url: str):
@@ -39,12 +38,12 @@ class TestUsers:
         response = requests.get(f"{app_url}/api/users/{user_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         
-    def test_post_single_user(self, app_url: str):
+    def test_post_single_user(self, app_url: str, user_data: dict[str]):
         """
         Тест на post: создание. Предусловия: подготовленные тестовые данные
-        Данные для отправки генерируются в generate_user_data() с помощью faker
+        Данные для отправки генерируются в фикстуре user_data с помощью faker
         """
-        user_data = generate_user_data()
+
         response = requests.post(f"{app_url}/api/users/", json=user_data)
         assert response.status_code == HTTPStatus.CREATED   
         user: dict = response.json()
@@ -63,7 +62,7 @@ class TestUsers:
         data: dict = response.json()
         assert data["message"] == "User deleted"
     
-    @pytest.mark.parametrize("user_data", [
+    @pytest.mark.parametrize("request_data", [
         {
             "email": "unique.mail.1@qaguru.autotest",
         },
@@ -96,27 +95,26 @@ class TestUsers:
             "avatar": "https://reqres.in/img/faces/unique-avatar-4.jpg"
         }
     ])
-    def test_patch_single_user(self, app_url: str, users: list[User], user_data: dict):
+    def test_patch_single_user(self, app_url: str, users: list[User], request_data: dict[str]):
         """ 
         Тест на patch: изменение. Предусловия: наличие созданного пользователя
         Не использую faker т.к. значение в каком-нибудь из полей может повториться, тогда последний assert не пройдет
         """
 
         user: dict = random.choice(users)
-        response = requests.patch(f"{app_url}/api/users/{user['id']}", json=user_data)
+        response = requests.patch(f"{app_url}/api/users/{user['id']}", json=request_data)
         assert response.status_code == HTTPStatus.OK
         updated_user: dict = response.json()
         User.model_validate(updated_user)
         assert user['id'] == updated_user['id']
-        for key in user_data.keys():
+        for key in request_data.keys():
             assert user[key] != updated_user[key]
 
-    def test_get_user_after_post(self, app_url: str):
+    def test_get_user_after_post(self, app_url: str, user_data: dict[str]):
         """ 
         Тест на Get после создания
         """
 
-        user_data = generate_user_data()
         response = requests.post(f"{app_url}/api/users/", json=user_data)
         assert response.status_code == HTTPStatus.CREATED   
         user: dict = response.json()
@@ -246,12 +244,11 @@ class TestUsers:
         response = requests.get(f"{app_url}/api/users/{user['id']}")
         assert response.status_code == HTTPStatus.NOT_FOUND
         
-    def test_user_flow(self, app_url: str):
+    def test_user_flow(self, app_url: str, user_data: dict[str]):
         """ 
         Тест user flow: создаем, читаем, обновляем, удаляем
         """
         
-        user_data: dict = generate_user_data()
         response = requests.post(f"{app_url}/api/users/", json=user_data)
         assert response.status_code == HTTPStatus.CREATED
         created_user: dict = response.json()
@@ -282,7 +279,7 @@ class TestUsers:
         delete_data: dict = response.json()
         assert delete_data["message"] == "User deleted"
     
-    @pytest.mark.parametrize("user_data", [
+    @pytest.mark.parametrize("request_data", [
         {
             "email": "qaguru.autotest",
             "first_name": "UniqueFirstName8",
@@ -296,17 +293,17 @@ class TestUsers:
             "avatar": "hetetepes:/reqres.in/unique-avatar-9.jpg"
         }
     ])
-    def test_user_fields_validation(self, app_url: str, users: list[User], user_data: dict):
+    def test_user_fields_validation(self, app_url: str, users: list[User], request_data: dict[str]):
         """ 
         Проверка валидности тестовых данных (email, url)
         """
         
         user_id = users[0]["id"]
         
-        response = requests.post(f"{app_url}/api/users/", json=user_data)
+        response = requests.post(f"{app_url}/api/users/", json=request_data)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         
-        response = requests.patch(f"{app_url}/api/users/{user_id}", json=user_data)
+        response = requests.patch(f"{app_url}/api/users/{user_id}", json=request_data)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         
     @pytest.mark.parametrize("field_to_remove", [
@@ -315,12 +312,11 @@ class TestUsers:
         "last_name",
         "avatar"
     ])
-    def test_user_post_without_field(self, app_url: str, field_to_remove: str):
+    def test_user_post_without_field(self, app_url: str, field_to_remove: str, user_data: dict[str]):
         """ 
         Проверка отправки модели без поля на создание
         """
         
-        user_data = generate_user_data()
         user_data.pop(field_to_remove, None)
         response = requests.post(f"{app_url}/api/users/", json=user_data)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY

@@ -4,6 +4,7 @@ dotenv.find_dotenv()
 import os
 import uvicorn
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi_pagination import add_pagination
 from app.routes import status, users

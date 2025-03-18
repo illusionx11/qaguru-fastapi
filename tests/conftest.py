@@ -4,7 +4,9 @@ import os
 import requests
 import json
 from http import HTTPStatus
-from app.models.User import User
+from faker import Faker
+
+faker = Faker()
 
 @pytest.fixture(scope="session", autouse=True)
 def envs():
@@ -48,3 +50,19 @@ def clear_generated_users(app_url: str) -> None:
     
     for user in generated_users:
         response = requests.delete(f"{app_url}/api/users/{user['id']}")
+        
+@pytest.fixture
+def user_data() -> dict[str]:
+    email = faker.email(domain="qaguru.autotest")
+    first_name = faker.first_name()
+    last_name = faker.last_name()
+    avatar = f"https://reqres.in/img/faces/{first_name}-{last_name}.jpg"
+    
+    user_data = {
+        "email": email,
+        "first_name": first_name,
+        "last_name": last_name,
+        "avatar": avatar
+    }
+    
+    return user_data
