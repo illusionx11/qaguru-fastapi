@@ -5,6 +5,7 @@ import requests
 import json
 from http import HTTPStatus
 from faker import Faker
+from tests.utils.api import APIWrapper
 
 faker = Faker()
 
@@ -66,3 +67,14 @@ def user_data() -> dict[str]:
     }
     
     return user_data
+
+def pytest_addoption(parser):
+    parser.addoption("--env", action="store", default="dev")
+    
+@pytest.fixture(scope="session", autouse=True)
+def env(request):
+    return request.config.getoption("--env")
+
+@pytest.fixture(scope="session")
+def api_wrapper(env):
+    return APIWrapper(env)
