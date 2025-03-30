@@ -1,31 +1,35 @@
 import pytest
-import requests
 from http import HTTPStatus
 from app.models.User import User
+from tests.utils.api import APIWrapper
 
 @pytest.mark.pagination
-@pytest.mark.usefixtures("app_url", "users")
+@pytest.mark.usefixtures("users", "api_wrapper")
 class TestPagination:
     
-    def test_users_pagination_total(self, app_url: str, users: list[User]):
+    @pytest.fixture(autouse=True)
+    def setup(self, api_wrapper: APIWrapper):
+        self.api_wrapper = api_wrapper
+    
+    def test_users_pagination_total(self, users: list[User]):
         """
         Тест на проверку общего количества записей (пользователей) в пагинации
         """
         
-        response = requests.get(f"{app_url}/api/users/")
+        response = self.api_wrapper.get_users()
         assert response.status_code == HTTPStatus.OK
     
         total = response.json()["total"]
         assert total == len(users)
 
     @pytest.mark.parametrize("page", [1, 2])
-    def test_users_pagination_expected_users(self, app_url: str, page: int, users: list[User]):
+    def test_users_pagination_expected_users(self, page: int, users: list[User]):
         """
         Тест на проверку ожидаемого количества объектов в ответе при фиксированном значении size
         """
         
         size = 10
-        response = requests.get(f"{app_url}/api/users/", params={"page": page, "size": size})
+        response = self.api_wrapper.get_users(params={"page": page, "size": size})
         assert response.status_code == HTTPStatus.OK
         
         users_on_page = response.json()["items"]
@@ -36,12 +40,12 @@ class TestPagination:
         assert len(users_on_page) == expected_users_on_page
 
     @pytest.mark.parametrize("size", [5, 3, 1])
-    def test_users_pagination_expected_pages(self, app_url: str, size: int, users: list[User]):
+    def test_users_pagination_expected_pages(self, size: int, users: list[User]):
         """
         Тест на проверку того, что возвращается правильное количество страниц при разных значениях size
         """
 
-        response = requests.get(f"{app_url}/api/users/", params={"page": 1, "size": size})
+        response = self.api_wrapper.get_users(params={"page": 1, "size": size})
         assert response.status_code == HTTPStatus.OK
 
         pages = response.json()["pages"]
@@ -50,7 +54,7 @@ class TestPagination:
         expected_pages = (len(users) + size - 1) // size
         assert pages == expected_pages
         
-    def test_users_pagination_wrong_page(self, app_url: str, users: list[User]):
+    def test_users_pagination_wrong_page(self, users: list[User]):
         """
         Тест на проверку количества записей (пользователей) на несуществующей странице
         """
@@ -58,7 +62,7 @@ class TestPagination:
         size = 10
         max_page = (len(users) + size - 1) // size
         
-        response = requests.get(f"{app_url}/api/users/", params={"page": max_page + 1, "size": size})
+        response = self.api_wrapper.get_users(params={"page": max_page + 1, "size": size})
         assert response.status_code == HTTPStatus.OK
         users = response.json()["items"]
         assert len(users) == 0
@@ -68,8 +72,8 @@ class TestPagination:
         Тест на проверку того, что возвращаются разные данные при разных значениях page
         """
         
-        response_first = requests.get(f"{app_url}/api/users/", params={"page": 1, "size": 5})
-        response_second = requests.get(f"{app_url}/api/users/", params={"page": 2, "size": 5})
+        response_first = self.api_wrapper.get_users(params={"page": 1, "size": 5})
+        response_second = self.api_wrapper.get_users(params={"page": 2, "size": 5})
         
         res_first = response_first.json()
         res_second = response_second.json()
